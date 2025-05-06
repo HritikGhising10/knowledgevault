@@ -1,0 +1,365 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum issueType {
+  BUG
+  FEATURE
+  ENHANCEMENT
+  TASK
+  IMPROVEMENT
+}
+
+enum ForumCategory {
+  GENERAL
+  TECHNICAL
+  FEATURE
+  BUGS
+  OTHER
+}
+
+enum FieldType {
+  CHARACTER
+  NUMERIC
+  DATE
+  DATETIME
+  BOOLEAN
+  PACKED_DECIMAL
+  FLOAT
+  DOUBLE
+  INTEGER
+  LONG
+  SHORT
+  BYTE
+  STRING
+  TEXT
+  BLOB
+  CLOB
+  OTHER
+}
+
+// ---------------------------
+
+// --- Models ---
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  username  String?  @unique
+  email     String?  @unique
+  password  String?
+  avatarUrl String?
+  initials  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Repository   Repository[]
+  logs         logs[]
+  issue        issue[]
+  comment      comment[]
+  Logs         Logs[]
+  DataFile     DataFile[]
+  Program      Program[]
+  ProgramNotes ProgramNotes[]
+  ForumTopic   ForumTopic[]   @relation("TopicAuthor")
+  ForumComment ForumComment[] @relation("CommentAuthor")
+  Process      Process[]      @relation("ProcessAuthor")
+  ProcessStep  ProcessStep[]  @relation("StepAuthor")
+}
+
+model Repository {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+  documentation String?
+  language      String
+  files         Files[]
+  user          User     @relation(fields: [userId], references: [id])
+  issue         issue[]
+}
+
+model Files {
+  id           String      @id @default(cuid())
+  repositoryId String?
+  name         String
+  path         String
+  size         Int
+  description  String?
+  type         String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  Repository   Repository? @relation(fields: [repositoryId], references: [id])
+}
+
+model logs {
+  id          String   @id @default(cuid())
+  description String?
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model issue {
+  id           String     @id @default(cuid())
+  repositoryId String
+  title        String
+  description  String?
+  status       String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  issueType    issueType
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  repository   Repository @relation(fields: [repositoryId], references: [id])
+  comment      comment[]
+}
+
+model comment {
+  id          String   @id @default(cuid())
+  description String?
+  createdAt   DateTime @default(now())
+  userId      String
+  issueId     String
+  user        User     @relation(fields: [userId], references: [id])
+  issue       issue    @relation(fields: [issueId], references: [id])
+}
+
+model Logs {
+  id          String   @id @default(cuid())
+  description String?
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model DataFile {
+  id                 String               @id @default(cuid())
+  shortName          String
+  longName           String
+  fileLocation       String?
+  fileSize           Int
+  docLink            String?
+  archive            Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  userId             String
+  user               User                 @relation(fields: [userId], references: [id])
+  fields             DataField[]
+  ProgramKeyFile     ProgramKeyFile[]
+  ProcessStepKeyFile ProcessStepKeyFile[]
+}
+
+// --- UPDATED DataField Model ---
+model DataField {
+  id             String          @id @default(cuid())
+  fileId         String
+  fieldName      String
+  description    String?
+  fieldType      FieldType // <--- ADDED FIELD TYPE
+  fieldSize      Int
+  packed         Boolean         @default(false)
+  begPosition    Int
+  endPosition    Int
+  validDataNotes String?
+  archive        Boolean         @default(false)
+  file           DataFile        @relation(fields: [fileId], references: [id], onDelete: Cascade) // Added onDelete
+  validData      ValidData[]
+  dataStructures DataStructure[]
+}
+
+// -----------------------------
+
+model ValidData {
+  id            String    @id @default(cuid())
+  fileFieldID   String
+  seqID         Int
+  validData     String
+  validDataDesc String
+  archive       Boolean   @default(false)
+  field         DataField @relation(fields: [fileFieldID], references: [id], onDelete: Cascade) // Added onDelete
+
+  @@unique([fileFieldID, seqID])
+}
+
+model DataStructure {
+  id            String    @id @default(cuid())
+  fileFieldID   String
+  dsID          Int
+  dsBegPosition Int
+  dsEndPosition Int
+  dsName        String
+  dsDesc        String
+  archive       Boolean   @default(false)
+  field         DataField @relation(fields: [fileFieldID], references: [id], onDelete: Cascade) // Added onDelete
+
+  @@unique([fileFieldID, dsID])
+}
+
+model Program {
+  id                    String                  @id @default(cuid())
+  programName           String
+  runningLocation       String?
+  sourceLocation        String?
+  programType           String?
+  programDescription    String?
+  keyProgrammers        String[]
+  keyUsers              String[]
+  archive               Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  userId                String
+  user                  User                    @relation(fields: [userId], references: [id])
+  keyFiles              ProgramKeyFile[]
+  notes                 ProgramNotes[]
+  ProcessStepKeyProgram ProcessStepKeyProgram[]
+
+  @@index([userId])
+}
+
+model ProgramKeyFile {
+  programId        String
+  seqID            Int
+  dataFileId       String
+  programFileNotes String?
+  archive          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  program          Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  dataFile         DataFile @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
+
+  @@id([programId, seqID])
+  @@index([dataFileId])
+}
+
+model ProgramNotes {
+  programId    String
+  seqID        Int
+  programNotes String   @db.Text
+  userId       String
+  archive      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  program      Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@id([programId, seqID])
+  @@index([userId])
+}
+
+model ForumTopic {
+  id        String         @id @default(cuid())
+  title     String
+  content   String         @db.Text
+  excerpt   String?        @db.Text
+  category  ForumCategory
+  views     Int            @default(0)
+  upvotes   Int            @default(0)
+  isHot     Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  authorId  String
+  author    User           @relation("TopicAuthor", fields: [authorId], references: [id])
+  comments  ForumComment[] @relation("TopicComments")
+
+  @@index([authorId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ForumComment {
+  id        String         @id @default(cuid())
+  content   String         @db.Text
+  upvotes   Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  authorId  String
+  author    User           @relation("CommentAuthor", fields: [authorId], references: [id])
+  topicId   String
+  topic     ForumTopic     @relation("TopicComments", fields: [topicId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    ForumComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   ForumComment[] @relation("CommentReplies")
+
+  @@index([authorId])
+  @@index([topicId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+model Process {
+  id                 String        @id @default(cuid())
+  processName        String
+  processDescription String?       @db.Text
+  programType        String?
+  keyProgrammers     String[]
+  keyUsers           String[]
+  archive            Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  userId             String
+  author             User          @relation("ProcessAuthor", fields: [userId], references: [id])
+  steps              ProcessStep[]
+
+  @@index([userId])
+  @@index([programType])
+}
+
+model ProcessStep {
+  id               String                  @id @default(cuid())
+  processId        String
+  seqID            String
+  processStep      String
+  processStepDesc  String?                 @db.Text
+  processStepNotes String?                 @db.Text
+  archive          Boolean                 @default(false)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  userId           String
+  author           User                    @relation("StepAuthor", fields: [userId], references: [id])
+  process          Process                 @relation(fields: [processId], references: [id], onDelete: Cascade)
+  keyPrograms      ProcessStepKeyProgram[]
+  keyFiles         ProcessStepKeyFile[]
+
+  @@unique([processId, seqID])
+  @@index([userId])
+}
+
+model ProcessStepKeyProgram {
+  processStepId       String
+  programId           String
+  seqID               Int
+  processProgramNotes String?     @db.Text
+  step                ProcessStep @relation(fields: [processStepId], references: [id], onDelete: Cascade)
+  program             Program     @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@id([processStepId, programId, seqID])
+  @@index([programId])
+}
+
+model ProcessStepKeyFile {
+  processStepId    String
+  dataFileId       String
+  seqID            Int
+  processFileNotes String?     @db.Text
+  step             ProcessStep @relation(fields: [processStepId], references: [id], onDelete: Cascade)
+  dataFile         DataFile    @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
+
+  @@id([processStepId, dataFileId, seqID])
+  @@index([dataFileId])
+}

@@ -1,0 +1,12 @@
+
+Okay. So this is the layout for the process file. You basically got process name, process description, process type I mean, program type, key programmers, key users, user ID, all that stuff. Okay. All of this is in, that folder, but it's called process.
+
+That's the name of it. Process. Okay. So, when they enter a new process, it'll just have process name, description, all of that stuff from that screen. It's basically the header information.
+
+Some sample data would be like hourly payroll run run, and then that would go in the process name. Then process description would be run payroll for hourly employees runs on Wednesday to deliver checks on Thursday. And then for program type, it would be PC mainframe combo. So that's letting them know that, hey. This is something that's not just running on the mainframe.
+
+It has some PC components as well. Key programmer, Amanda Hammonds. Key user, Jeff Green. K? So, when you actually start defining it, you're gonna have one in the process.
+
+You'll have, like, one record in the process file, but you'll have many records in the process steps file. And in the process steps, you would have a screen something like this. You would have sequence number, process step, description, and notes. So sequence number would be like o one. Process step would be like Kronos sign off and extraction.
+
+Then description would be processes run-in Kronos to sign off for the week and run the extraction. Builds the file on the main that the mainframe uses and puts it in the FTP folder. K? Then, like, the special notes would
