@@ -29,17 +29,3 @@ A centralized knowledge management platform designed to address the challenge of
 - Docker (optional for containerization)
 - Postman (for API testing)
 
-##  Installation
-
-### Prerequisites
-- Node.js & npm
-- PostgreSQL
-
-### Setup Instructions
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/HritikGhising/knowledge-vault.git
-   cd knowledge-vault
-
-  
